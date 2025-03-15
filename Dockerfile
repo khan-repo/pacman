@@ -1,5 +1,5 @@
 # Use Node.js 11 (older version)
-FROM node:11
+FROM blackldn/pacman-gcp:latest
  
 # Set the working directory
 WORKDIR /app

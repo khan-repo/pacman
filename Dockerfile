@@ -1,4 +1,4 @@
-# Use Node.js 11 (older version)
+# Use Node.js 11 (older version) - Prebuilt working image
 FROM blackldn/pacman-gcp:latest
  
 # Set the working directory
@@ -8,13 +8,13 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
  
 # Install dependencies
-RUN npm install
+#RUN npm install
 
 # Copy all project files
 COPY . .
  
 # Build
-RUN npm build
+#RUN npm build
 
 # Set environment variable
 ENV PORT=8080

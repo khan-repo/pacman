@@ -9,6 +9,7 @@ COPY package.json package-lock.json* ./
  
 # Install dependencies
 RUN npm install
+RUN npx webpack serve --allowed-hosts all
  
 # Copy all project files
 COPY . .

@@ -1,8 +1,7 @@
 const path = require('path');
 devServer: {
-  port: 8080
-  host: '0.0.0.0',
-  useLocalIp: true,
+  port: 8080,
+  host: '0.0.0.0'
 }
 
 module.exports = {

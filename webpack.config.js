@@ -1,9 +1,9 @@
 const path = require('path');
 devServer: {
+  host: '0.0.0.0',
   port: 8080,
-  host: '0.0.0.0'
+  allowedHosts: ['all'] // or use 'auto' for slight more security
 }
-
 module.exports = {
   entry: "./src/index.js",
   output: {

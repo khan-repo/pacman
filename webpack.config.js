@@ -1,4 +1,7 @@
 const path = require('path');
+devServer: {
+  port: 8080
+}
 
 module.exports = {
   entry: "./src/index.js",
@@ -26,9 +29,5 @@ module.exports = {
         loader : 'file-loader'
       }
     ]
-  }
- devServer: {
-    allowedHosts: 'all',
-  },
 };
 

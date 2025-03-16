@@ -19,10 +19,10 @@ COPY . .
 #RUN npm start
 
 # Set environment variable
-ENV PORT=443
+ENV PORT=8080
  
 # Expose the application's port
-EXPOSE 443
+EXPOSE 8080
  
 # Start the application
 CMD ["npm", "start"]

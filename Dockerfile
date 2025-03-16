@@ -1,5 +1,5 @@
 # Use Node.js 11 (older version) - Prebuilt working image
-FROM blackldn/pacman-gcp:latest
+FROM node:18
  
 # Set the working directory
 WORKDIR /app
@@ -8,7 +8,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
  
 # Install dependencies
-#RUN npm install
+RUN npm install
 
 # Copy all project files
 COPY . .

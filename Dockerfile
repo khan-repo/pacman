@@ -16,7 +16,7 @@ RUN npm install --save-dev webpack-cli
 COPY . .
  
 # Build
-RUN npm build
+#RUN npm start
 
 # Set environment variable
 ENV PORT=8080

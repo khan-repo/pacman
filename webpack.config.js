@@ -1,7 +1,6 @@
 const path = require('path');
 devServer: {
   host: '0.0.0.0',
-  port: 8080,
   allowedHosts: ['all'] // or use 'auto' for slight more security
 }
 module.exports = {

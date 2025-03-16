@@ -9,12 +9,14 @@ COPY package.json package-lock.json* ./
  
 # Install dependencies
 RUN npm install
+RUN npm install --save-dev webpack
+RUN npm install --save-dev webpack-cli
 
 # Copy all project files
 COPY . .
  
 # Build
-#RUN npm build
+RUN npm build
 
 # Set environment variable
 ENV PORT=8080

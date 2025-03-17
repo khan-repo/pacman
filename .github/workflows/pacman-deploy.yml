@@ -7,7 +7,7 @@ on:
       
 jobs:
   deploy:
-    runs-on: [self-hosted, pacman-dev-gcp-team1, pacman-dev-gcp-team2, pacman-dev-gcp-team3, pacman-dev-gcp-team4]
+    runs-on: [self-hosted]
 
     steps:
       - name: Checkout code

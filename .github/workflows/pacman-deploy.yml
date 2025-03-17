@@ -5,7 +5,7 @@ on:
     branches:
       - team1
     paths:
-      - 'pacman/**' # Only trigger if files in pacman directory change
+      - '**' # Only trigger if files in pacman directory change
 
 jobs:
   deploy:

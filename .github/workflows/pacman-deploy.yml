@@ -5,18 +5,19 @@ on:
     branches:
       - team1
     paths:
-      - 'pacman/**' # Only trigger if files in pacman directory change
+      - './**'
 
 jobs:
   deploy:
-    runs-on: self-hosted
-    labels: pacman-dev-gcp-team1
+    runs-on:
+      - self-hosted
+      - pacman-dev-gcp-team1 # corrected placement of label
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: team1 # ensure we are on the correct branch
+          ref: team1
 
       - name: Navigate to pacman directory and pull changes
         run: |

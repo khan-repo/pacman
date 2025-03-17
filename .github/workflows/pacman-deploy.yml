@@ -17,5 +17,5 @@ jobs:
 
       - name: Navigate to pacman directory and pull changes
         run: |
-          cd pacman
+          pushd ~pacman
           git pull origin team1

@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - team1
-    paths:
-      - './**'
 
 jobs:
   deploy:

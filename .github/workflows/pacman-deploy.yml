@@ -1,21 +1,21 @@
-name: Pacman Deployment - Team1
+name: Pacman Deployment - Team1, Team2, Team3 and Team4
 
 on:
   push:
     branches:
-      - team1
+      - start_pacman
       
 jobs:
   deploy:
-    runs-on: [self-hosted, pacman-dev-gcp-team1]
+    runs-on: [self-hosted, pacman-dev-gcp-team1, pacman-dev-gcp-team2, pacman-dev-gcp-team3, pacman-dev-gcp-team4]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: team1
+          ref: start_pacman
 
       - name: Navigate to pacman directory and pull changes
         run: |
           pushd ~/pacman
-          git pull origin team1
+          nohup npm start &

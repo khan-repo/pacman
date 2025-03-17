@@ -4,12 +4,10 @@ on:
   push:
     branches:
       - team1
-
+      
 jobs:
   deploy:
-    runs-on:
-      - self-hosted
-      - pacman-dev-gcp-team1 # corrected placement of label
+    runs-on: [self-hosted, pacman-dev-gcp-team1]
 
     steps:
       - name: Checkout code

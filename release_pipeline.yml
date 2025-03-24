@@ -1,0 +1,117 @@
+# this pipeline manually releases a version by:
+# creating release notes from  commit history
+# checking out the branch, creating the release tag and pushing it
+# creating a GitHub release with release notes
+# deploying the application to production
+
+trigger: none  # disables the automatic triggering of the pipeline
+pr: none       # disables automatic runs for pull requests
+
+parameters:
+- name: releaseTag                 # the tag for the release (e.g. v1.0.0)
+  type: string
+  default: 'v1.0.0'                # default tag value if none is entered
+  displayName: 'Enter Release Tag (e.g., v1.0.0)'
+
+pool:
+  vmImage: 'ubuntu-latest'         # use the latest ubuntu image for the agent
+
+variables:
+- group: pacman-vars
+- name: MY_APP_LOCATION
+  value: "/"                     # source files are located in the root
+- name: MY_API_LOCATION
+  value: ""                      # no api used
+- name: MY_APP_ARTIFACT_LOCATION
+  value: "/"                     # build output will be the root
+
+stages:
+- stage: ReleaseAndDeploy
+  displayName: "Release and Deploy to Production"
+  jobs:
+  - job: CreateReleaseAndDeploy
+    displayName: "Create Release, Publish Release Notes, and Deploy"
+    steps:
+    # checkout the full history of repo
+    - checkout: self
+      persistCredentials: true
+      fetchDepth: 0              # fetch the entire commit history
+
+    # this script finds the most recent tag. If there are none, it creates release notes from the beginning
+    # it writes commit messages to a text file called release_notes.txt
+    - script: |
+        # get the most recent tag, if none is found, default to initial commit
+        previous_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "initial commit")
+        echo "Previous tag: ${previous_tag}"
+        
+        # if no previous tag exists, create release notes from the beginning of the repo
+        if [ "${previous_tag}" = "initial commit" ]; then
+          echo "No previous tag found. Generating release notes from the beginning of the repository."
+          git log --pretty=format:"* %s" > release_notes.txt
+        else
+          echo "Generating release notes from ${previous_tag} to HEAD."
+          # create release notes for commits between the previous tag and the current commit
+          git log ${previous_tag}..HEAD --pretty=format:"* %s" > release_notes.txt
+        fi
+        
+        # show the created release notes
+        echo "Generated Release Notes:"
+        cat release_notes.txt
+      displayName: "Generate Release Notes"
+
+    # publish the release notes as a pipeline artifact
+    - task: PublishBuildArtifacts@1
+      displayName: "Publish Release Notes Artifact"
+      inputs:
+        pathToPublish: 'release_notes.txt'  # file to be published as an artifact
+        artifactName: 'release-notes'       # name of the artifact
+
+    # checkout the branch, create the tag if it doesn't exist and push the tag to remote
+    - script: |
+        # switch to the branch that triggered the build to avoid a detached head
+        git checkout $(Build.SourceBranchName)
+        
+        # fetch all tags from remote
+        git fetch --tags
+        
+        # check if the release tag already exists locally
+        if git rev-parse ${{ parameters.releaseTag }} >/dev/null 2>&1; then
+          echo "Tag ${{ parameters.releaseTag }} already exists."
+        else
+          echo "Tag ${{ parameters.releaseTag }} does not exist. Creating tag..."
+          git tag ${{ parameters.releaseTag }}
+        fi
+        
+        # push the tag to remote
+        echo "Pushing tag ${{ parameters.releaseTag }} to remote."
+        git push origin ${{ parameters.releaseTag }}
+      displayName: "Checkout Branch, Create (if needed), and Push Release Tag"
+
+    # creating a github release using the release notes
+    # the release is associated with the branch that triggered the build (with target_commitish)
+    - script: |
+        echo "Preparing to create GitHub release for tag ${{ parameters.releaseTag }}"
+        # escape newlines in release_notes.txt so that the json is valid
+        escaped_release_notes=$(sed ':a;N;$!ba;s/\n/\\n/g' release_notes.txt)
+        echo "Escaped Release Notes: ${escaped_release_notes}"
+        
+        echo "Creating GitHub release for tag ${{ parameters.releaseTag }}"
+        curl -X POST -H "Authorization: token $(GITHUB_TOKEN)" -H "Content-Type: application/json" \
+          -d '{
+            "tag_name": "'${{ parameters.releaseTag }}'",
+            "name": "'${{ parameters.releaseTag }}'",
+            "body": "'"${escaped_release_notes}"'",
+            "draft": false,
+            "prerelease": false,
+            "target_commitish": "'"$(Build.SourceBranchName)"'"
+          }' https://api.github.com/repos/danielmcr1/pacman/releases
+      displayName: "Create GitHub Release"
+
+    # deploy the application to production
+    - task: AzureStaticWebApp@0  # deploys static web applications to azure
+      displayName: "Deploy to Azure Static Web Apps"
+      inputs:
+        app_location: '$(MY_APP_LOCATION)'  # root (/)
+        api_location: '$(MY_API_LOCATION)'  # no api used
+        output_location: '$(MY_APP_ARTIFACT_LOCATION)'  # root
+        azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN_PROD)'  # the deployment token needed to deploy

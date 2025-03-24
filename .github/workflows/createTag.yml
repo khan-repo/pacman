@@ -42,7 +42,7 @@ jobs:
 
     # publish the generated release notes as an artifact
     - name: Publish Release Notes Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: release-notes
         path: release_notes.txt

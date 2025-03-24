@@ -22,6 +22,7 @@ on:
       - 'team2'
       - 'team3'
       - 'team4'
+  workflow_dispatch: # allows manual triggering
 
 env:
   AZURE_STATIC_WEB_APPS_API_TOKEN_PROD: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}
@@ -53,44 +54,25 @@ jobs:
       # step to set the correct api token based on the branch
       - name: Set Azure API Token for the branch
         run: |
-          case $GITHUB_REF in
-            refs/heads/master)
-              echo "Using production token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/develop)
-              echo "Using development token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/dev-gcp)
-              echo "Using dev-gcp token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV_GCP }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/st)
-              echo "Using staging token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ST }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/team1)
-              echo "Using team1 token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM1 }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/team2)
-              echo "Using team2 token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM2 }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/team3)
-              echo "Using team3 token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM3 }}" >> $GITHUB_ENV
-              ;;
-            refs/heads/team4)
-              echo "Using team4 token"
-              echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM4 }}" >> $GITHUB_ENV
-              ;;
-            *)
-              echo "No matching token for this branch"
-              exit 1
-              ;;
-          esac
+          declare -A TOKEN_MAP=(
+            ["master"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_PROD }}"
+            ["dev"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV }}"
+            ["dev-gcp"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_DEV_GCP }}"
+            ["st"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ST }}"
+            ["team1"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM1 }}"
+            ["team2"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM2 }}"
+            ["team3"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM3 }}"
+            ["team4"]="${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_TEAM4 }}"
+          )
+
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          if [[ -n "${TOKEN_MAP[$BRANCH_NAME]}" ]]; then
+            echo "Using token for $BRANCH_NAME"
+            echo "AZURE_STATIC_WEB_APPS_API_TOKEN=${TOKEN_MAP[$BRANCH_NAME]}" >> $GITHUB_ENV
+          else
+            echo "No matching token for this branch"
+            exit 1
+          fi
 
       # deploy job
       - name: Build And Deploy
@@ -98,10 +80,10 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.MY_GITHUB_TOKEN }}
           action: "upload"
-          app_location: "/" 
-          api_location: "" 
+          app_location: "/"
+          api_location: ""
           app_artifact_location: "/"
 
   close_pull_request_job:

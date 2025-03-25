@@ -2,26 +2,22 @@ trigger:
   branches:
     include:
       - master
-  tags:
-    include:
-      - '*'   # only trigger when a commit on master is tagged
+pr: none  # disable pull request triggers
 
-# deployment tokens are stored in the variable group
 variables:
 - group: pacman-vars
   
 - name: MY_APP_LOCATION
-  value: "/"  # the app's source files are in the root directory
+  value: "/"  # the apps source files are in the root directory
 
 - name: MY_API_LOCATION  
-  value: ""  # no api's used
+  value: ""  # no api used
 
 - name: MY_APP_ARTIFACT_LOCATION
   value: "/"  # output artifacts will be placed in the root directory
 
-# stages are used to divide the pipeline into distinct phases
 stages:
-- stage: BuildAndDeploy  # this stage will handle both build and deployment tasks
+- stage: BuildAndDeploy
   displayName: "Build and Deploy"
   
   jobs:
@@ -29,16 +25,31 @@ stages:
     displayName: "Build and Deploy Job"
     
     pool:
-      vmImage: 'ubuntu-latest'  # run the job on the latest ubuntu virtual machine
+      vmImage: 'ubuntu-latest'
 
     steps:
-    - checkout: self  # checks out the repo so the pipeline can access its files
+    - checkout: self
       submodules: true
+      fetchTags: true   # ensure that tags are fetched along with the repo
 
-    - task: AzureStaticWebApp@0  # deploys static web applications to Azure
+    - script: |
+         echo "Checking if the current commit has a tag..."
+         TAGS=$(git tag --points-at HEAD)
+         if [ -z "$TAGS" ]; then
+           echo "No tag found on this commit."
+           echo "##vso[task.setvariable variable=shouldDeploy]false"
+         else
+           echo "Tag(s) found: $TAGS"
+           echo "##vso[task.setvariable variable=shouldDeploy]true"
+         fi
+      name: CheckForTag
+      displayName: "Check if commit has a tag"
+
+    - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web Apps"
+      condition: eq(variables.shouldDeploy, 'true')
       inputs:
-        app_location: '$(MY_APP_LOCATION)'         # root (/)
-        api_location: '$(MY_API_LOCATION)'         # no api used
-        output_location: '$(MY_APP_ARTIFACT_LOCATION)'  # root
-        azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN_PROD)'  # deployment token
+        app_location: '$(MY_APP_LOCATION)'
+        api_location: '$(MY_API_LOCATION)'
+        output_location: '$(MY_APP_ARTIFACT_LOCATION)'
+        azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN_PROD)'

@@ -1,0 +1,55 @@
+# trigger the pipeline for any team branch (team1, team2, team3, etc.)
+trigger:
+  branches:
+    include:
+      - team*
+
+pr:
+  branches:
+    include:
+      - team*
+
+# deployment tokens are stored in the variable group
+variables:
+- group: pacman-vars  # contains deployment tokens
+
+- name: MY_APP_LOCATION
+  value: "/"  # the apps source files are in the root 
+
+- name: MY_API_LOCATION  
+  value: ""  # no api used
+
+- name: MY_APP_ARTIFACT_LOCATION
+  value: "/"  # output artifacts will be placed in the root 
+
+# extract the team number dynamically from the branch name
+- name: TEAM_NAME
+  value: $[lower(variables['Build.SourceBranchName'])]  # converts branch name to lowercase
+
+- name: AZURE_TOKEN
+  value: $[format('AZURE_STATIC_WEB_APPS_API_TOKEN_{0}', upper(variables['TEAM_NAME']))]  # constructs the token dynamically
+
+stages:
+- stage: BuildAndDeploy
+  displayName: "Build and Deploy"
+  
+  jobs:
+  - job: BuildDeploy
+    displayName: "Build and Deploy Job"
+    
+    # the pool is the environment where the job will run
+    pool:
+      vmImage: 'ubuntu-latest'  # the job runs on the latest ubuntu virtual machine
+
+    steps:
+    - checkout: self  # checks out the repo so the pipeline can access its files
+      submodules: true
+
+    - task: AzureStaticWebApp@0
+      displayName: "Deploy to Azure Static Web Apps"
+      
+      inputs:
+        app_location: '$(MY_APP_LOCATION)'  # root (/)
+        api_location: '$(MY_API_LOCATION)'  # no api used
+        output_location: '$(MY_APP_ARTIFACT_LOCATION)'  # root
+        azure_static_web_apps_api_token: '$(AZURE_TOKEN)'  # dynamic deployment token

@@ -3,13 +3,7 @@ trigger:
     include:
       - '*'  # runs only when a tag is pushed
 
-pr: none  # prevents automatic runs for PRs
-
-parameters:
-- name: releaseTag
-  type: string
-  default: 'v1.0.0'
-  displayName: 'Enter Release Tag (e.g., v1.0.0)'
+pr: none  # prevents automatic runs for pr's
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -22,6 +16,9 @@ variables:
   value: ""  
 - name: MY_APP_ARTIFACT_LOCATION
   value: "/"  
+# use the tag that triggered the build as the release tag
+- name: RELEASE_TAG
+  value: $(Build.SourceBranchName)
 
 stages:
 - stage: ReleaseAndDeploy
@@ -34,7 +31,7 @@ stages:
       persistCredentials: true
       fetchDepth: 0
 
-    # generate release notes from commit history since the last tag
+    # generate release notes from commit history since the previous tag
     - script: |
         echo "Generating release notes from commit history..."
         previous_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "initial commit")
@@ -59,26 +56,29 @@ stages:
         pathToPublish: 'release_notes.txt'
         artifactName: 'release-notes'
 
-    # create a github release with the release notes
+    # create a gitHub release using the generated release notes
     - script: |
-        echo "Creating GitHub release for tag ${{ parameters.releaseTag }}..."
+        echo "Creating GitHub release for tag $(RELEASE_TAG)..."
         escaped_release_notes=$(sed ':a;N;$!ba;s/\n/\\n/g' release_notes.txt)
         
-        curl -X POST -H "Authorization: token $(GITHUB_TOKEN)" -H "Content-Type: application/json" \
+        curl -X POST \
+          -H "Authorization: token $(GITHUB_TOKEN)" \
+          -H "Content-Type: application/json" \
           -d '{
-            "tag_name": "'${{ parameters.releaseTag }}'",
-            "name": "'${{ parameters.releaseTag }}'",
+            "tag_name": "$(RELEASE_TAG)",
+            "name": "$(RELEASE_TAG)",
             "body": "'"${escaped_release_notes}"'",
             "draft": false,
             "prerelease": false
-          }' https://api.github.com/repos/danielmcr1/pacman/releases
+          }' \
+          https://api.github.com/repos/danielmcr1/pacman/releases
       displayName: "Create GitHub Release"
 
-    # deploy to production
+    # deploy to production using the production deployment token
     - task: AzureStaticWebApp@0
       displayName: "Deploy to Azure Static Web Apps"
       inputs:
         app_location: '$(MY_APP_LOCATION)'  
         api_location: '$(MY_API_LOCATION)'  
         output_location: '$(MY_APP_ARTIFACT_LOCATION)'  
-        azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN_PROD)'  
+        azure_static_web_apps_api_token: '$(AZURE_STATIC_WEB_APPS_API_TOKEN_PROD)'

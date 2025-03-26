@@ -1,20 +1,20 @@
-# trigger the pipeline on any team branch
+# trigger only when a tag is created
 trigger:
-  branches:
+  tags:
     include:
-      - team*
+      - '*'  # runs only when a tag is pushed
 
 pr:
   branches:
     include:
-      - team*
+      - team*  # still runs for PRs targeting team branches
 
 # deployment tokens are stored in the variable group pacman-vars
 variables:
 - group: pacman-vars
 
 - name: MY_APP_LOCATION
-  value: "/"  # apps source files are in the root
+  value: "/"  # app source files are in the root
 
 - name: MY_API_LOCATION  
   value: ""   # no api used
